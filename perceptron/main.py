@@ -12,43 +12,48 @@ class Classifier:
         self.sampleSpace = []
         self.testSpace = []
         self.nAttributes = None
-        self.type = None
+        self.class1 = None
+        self.class2 = None
 
     def load_training_data(self, path1, path2):
         with open(path1, 'r') as file:
             for line in file:
                 sample = list(line.strip().split(','))
                 self.sampleSpace.append(sample)
-            if self.sampleSpace[0][-1] == "1" or self.sampleSpace[0][-1] == "0":
-                self.type = "Activation"
-            else:
-                self.type = "Iris"
             self.nAttributes = len(self.sampleSpace[0]) - 1
             self.weights = [random.gauss(0.0, 0.1) for _ in range(self.nAttributes)]
+            # print("Initial weights ", self.weights)
         file.close()
+        self.define_classes()
         with open(path2, 'r') as file2:
             for line in file2:
                 sample = list(line.strip().split(','))
                 self.testSpace.append(sample)
         file2.close()
 
+    def define_classes(self):
+        if self.sampleSpace[0][-1] == "0" or self.sampleSpace[0][-1] == "1":
+            self.class1 = "1"
+            self.class2 = "0"
+        self.class1 = self.sampleSpace[0][-1]
+        for sample in self.sampleSpace:
+            if sample[-1] != self.class1:
+                self.class2 = sample[-1]
+                break
+
     def train(self):
         for epoch in range(self.ep):
             for sample in self.sampleSpace:
                 y = self.get_result(sample[:-1])
-                if self.type == "Activation":
-                    if y != int(sample[-1]):
-                        for i in range(self.nAttributes):
-                            self.weights[i] = self.weights[i] + (int(sample[-1]) - y) * self.a * float(sample[i])
-                else:
-                    diff = 1 if y == "Iris-virginica" else -1
-                    if y != sample[-1]:
-                        for i in range(self.nAttributes):
-                            self.weights[i] = self.weights[i] + diff * self.a * float(sample[i])
-            if self.type == "Activation":
+                diff = 1 if y == self.class2 else -1
+                if y != sample[-1]:
+                    for i in range(self.nAttributes):
+                        self.weights[i] = self.weights[i] + diff * self.a * float(sample[i])
+            if self.nAttributes == 2:
                 self.display_training(epoch)
             print("Epoch number " + str(epoch + 1) + ", accuracy: " + str(self.test_accuracy()))
             random.shuffle(self.sampleSpace)
+            # print("Result weights ", self.weights)
 
     def display_training(self, ep, *args):
         w1 = self.weights[0]
@@ -61,7 +66,7 @@ class Classifier:
         plt.yticks(np.arange(0, 100, 20))
         plt.plot(x1, x2, label=f'Decision boundary epoch {ep}', color='g')
         for point in self.sampleSpace:
-            if point[2] == "1":
+            if point[2] == self.class1:
                 plt.scatter(float(point[0]), float(point[1]), color='b')
             else:
                 plt.scatter(float(point[0]), float(point[1]), color='r')
@@ -78,10 +83,7 @@ class Classifier:
         result_sum = 0
         for i in range(len(sample)):
             result_sum += self.weights[i] * float(sample[i])
-        if self.type == "Activation":
-            return 1 if result_sum >= self.threshold else 0
-        else:
-            return "Iris-versicolor" if result_sum >= self.threshold else "Iris-virginica"
+        return self.class1 if result_sum >= self.threshold else self.class2
 
     def test_accuracy(self):
         correct_predictions = 0
@@ -97,16 +99,11 @@ class Classifier:
 def main():
     a = float(input("Enter the learning rate: "))
     ep = int(input("Enter number of epochs: "))
-    classifier1 = Classifier(a, ep)
+    classifier = Classifier(a, ep)
     training_file_path = input("Enter the path to the training file for class 1: ")
     test_file_path = input("Enter the path to the test file for class 1: ")
-    classifier1.load_training_data(training_file_path, test_file_path)
-    classifier1.train()
-    classifier2 = Classifier(a, ep)
-    training_file_path2 = input("Enter the path to the training file for class 2: ")
-    test_file_path2 = input("Enter the path to the test file for class 2: ")
-    classifier2.load_training_data(training_file_path2, test_file_path2)
-    classifier2.train()
+    classifier.load_training_data(training_file_path, test_file_path)
+    classifier.train()
 
     while True:
         print("type e for exiting the program")
@@ -117,14 +114,10 @@ def main():
             break
 
         observation = option.split(',')
-        if len(observation) == classifier1.nAttributes:
-            t = classifier1.type
-            r = classifier1.get_result(observation)
-            classifier1.display_training(ep, observation)
-        else:
-            t = classifier2.type
-            r = classifier2.get_result(observation)
-        print(f"Class {t}, {r}")
+        r = classifier.get_result(observation)
+        if classifier.nAttributes == 2:
+            classifier.display_training(ep, observation)
+        print(f"Class {r}")
 
 
 if __name__ == "__main__":
