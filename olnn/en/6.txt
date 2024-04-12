@@ -1,0 +1,3 @@
+ChatGPT remembers a limited number of previous prompts in the same conversation. Journalists have speculated that this will allow ChatGPT to be used as a personalized therapist.[30] To prevent offensive outputs from being presented to and produced by ChatGPT, queries are filtered through the OpenAI "Moderation endpoint" API (a separate GPT-based AI).[31][32][10][30]
+
+In March 2023, OpenAI added support for plugins for ChatGPT.[33] This includes both plugins made by OpenAI, such as web browsing and code interpretation, and external plugins from developers such as Expedia, OpenTable, Zapier, Shopify, Slack, and Wolfram.
