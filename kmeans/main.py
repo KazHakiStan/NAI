@@ -9,11 +9,11 @@ def load_dataset(file):
     return attributes, data
 
 
-def euclidean_distance(attribute, centroid):
+def euclidean_distance(sample, centroid):
     squared_diff_sum = 0
 
-    for attr, cent in zip(attribute, centroid):
-        squared_diff_sum += (attr - cent) ** 2
+    for attr, cent in zip(sample, centroid):
+        squared_diff_sum += (float(attr) - cent) ** 2
 
     return squared_diff_sum ** 0.5
 
@@ -26,59 +26,57 @@ def calculate_distances(attributes, centroids):
     return distances
 
 
-def assign_clusters(attributes, centroids):
-    # Convert attributes to list of lists of numbers
-    attributes = [[float(val) for val in sublist] for sublist in attributes]
-
-    # Convert centroids to list of lists of numbers
-    centroids = [[float(val) for val in sublist] for sublist in centroids]
-    assigned_clusters = []
-    for attribute in attributes:
-        min_distance = float('inf')
-        min_cluster_idx = None
-
-        for idx, centroid in enumerate(centroids):
-            distance = euclidean_distance(attribute, centroid)
+def assign_clusters(data, centroids):
+    new_clusters = [[] for _ in range(len(centroids))]
+    for sample in data:
+        cid = 0
+        min_distance = euclidean_distance(sample[:-1], centroids[0])
+        for i in range(len(centroids)):
+            distance = euclidean_distance(sample[:-1], centroids[i])
             if distance < min_distance:
                 min_distance = distance
-                min_cluster_idx = idx
-
-        assigned_clusters.append(min_cluster_idx)
-
-    return assigned_clusters
+                cid = i
+        new_clusters[cid].append(sample)
+    return new_clusters
 
 
-def initiate_clusters(attributes, k):
-    n_samples = len(attributes)
+def initiate_clusters(data, k):
+    n_samples = len(data)
     clusters = [[] for _ in range(k)]
-    for attribute in attributes:
+    for attribute in data:
         cluster_id = np.random.randint(0, k)
         clusters[cluster_id].append(attribute)
     return clusters
 
 
-# def get_purity(labels, clusters):
-#     purity = {}
-#     n_samples = len(labels)
-#     # labels = np.array(labels)
-#     for i, cluster in enumerate(clusters):
-#         cluster_labels = []
-#
-#         unique_labels, label_counts = np.unique(cluster_labels, return_counts=True)
-#         dominant_label = unique_labels[np.argmax(label_counts)]
-#         percentage = label_counts.max() / len(cluster_labels) * 100
-#         purity[f'cluster{i + 1}'] = f'{percentage:.2f}% {dominant_label}'
-#     return purity
+def get_purity(clusters):
+    purity = [{} for _ in range(len(clusters))]
+    labels = {}
+    counter = 0
+    for cluster in clusters:
+        for sample in cluster:
+            if sample[-1] not in labels:
+                labels[sample[-1]] = 0
+        for label in labels:
+            for sample in cluster:
+                if sample[-1] == label:
+                    labels[label] += 1 / len(cluster)
+        dominant_label = max(labels, key=lambda k: labels[k])
+        purity[counter][f'cluster {counter}'] = f'dominant_label is {dominant_label} ' \
+                                                f'with {labels[dominant_label]:.2f}; {labels}'
+        labels = {}
+        counter += 1
+    return purity
 
 
 def calculate_centroids(clusters):
     centroids = []
     for cluster in clusters:
-        centroid = [0] * len(cluster[0])
+        centroid = [0] * (len(cluster[0]) - 1)
 
         for point in cluster:
-            for i, attribute in enumerate(point):
-                centroid[i] += attribute
+            for i in range(len(point) - 1):
+                centroid[i] += float(point[i])
 
         centroid = [coord / len(cluster) for coord in centroid]
         centroids.append(centroid)
@@ -88,30 +86,29 @@ def calculate_centroids(clusters):
 def main():
     attributes, data = load_dataset("iris_kmeans.txt")
 
-    print(attributes)
-    print(data)
-
     k = int(input('Enter number of clusters: '))
-    clusters = initiate_clusters(attributes, k)
-    print(clusters)
-    print('Initial centroids:', calculate_centroids(clusters))
+    clusters = initiate_clusters(data, k)
+    centroids = calculate_centroids(clusters)
+    distances_str = calculate_distances(attributes, centroids)
     iteration = 1
     while True:
         centroids = calculate_centroids(clusters)
         distances = calculate_distances(attributes, centroids)
-        print(distances)
         sum_of_distances = np.sum(np.min(distances, axis=0))
-        # purity = get_purity(labels, clusters)
+        new_distances_str = str(distances)
+        purity = get_purity(clusters)
         print(f'\nIteration: {iteration}')
         print(f'Sum of distances: {sum_of_distances:.2f}')
-        # print('Purity:')
-        # for cluster, percentage in purity.items():
-        #     print(f'{cluster}: {percentage}')
+        for cluster in purity:
+            print('Purity:', cluster)
 
-        new_clusters = assign_clusters(attributes, centroids)
-        if np.array_equal(clusters, new_clusters):
+        new_clusters = assign_clusters(data, centroids)
+
+        if not iteration == 1 and distances_str == new_distances_str:
             break
+        distances_str = new_distances_str
         clusters = new_clusters
+        iteration += 1
 
 
 if __name__ == "__main__":
