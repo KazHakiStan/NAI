@@ -17,9 +17,15 @@ def calculate_total_distance(tour, distance_matrix):
     return total_distance
 
 
-def generate_neighbor(tour):
+def generate_neighbor(tour, counter):
     neighbor = tour.copy()
-    i, j = random.sample(range(len(tour)), 2)
+    if counter == len(tour) - 1:
+        i = counter
+        j = counter - 1
+    else:
+        i = counter
+        j = counter + 1
+    # print("i " + str(i) + " j " + str(j))  
     neighbor[i], neighbor[j] = neighbor[j], neighbor[i]
     return neighbor
 
@@ -38,8 +44,12 @@ def simulated_annealing(distance_matrix, initial_temperature, cooling_rate, stop
 
     solutions = [(current_solution, current_distance)]
 
+    counter = 0
+
     while current_temperature > stopping_temperature:
-        neighbor_solution = generate_neighbor(current_solution)
+        if counter == len(current_solution): 
+            counter = 0
+        neighbor_solution = generate_neighbor(current_solution, counter)
         neighbor_distance = calculate_total_distance(neighbor_solution, distance_matrix)
 
         if neighbor_distance < current_distance:
@@ -56,7 +66,7 @@ def simulated_annealing(distance_matrix, initial_temperature, cooling_rate, stop
                 best_distance = current_distance
 
         current_temperature *= cooling_rate
-
+        counter += 1
         solutions.append((current_solution, current_distance))
 
     return solutions, best_solution, best_distance
@@ -65,8 +75,8 @@ def simulated_annealing(distance_matrix, initial_temperature, cooling_rate, stop
 def main():
     file_path = 'tsp_data2.txt'
     distance_matrix = load_tsp_data(file_path)
-    initial_temperatures = [1000, 5000, 10000]
-    cooling_rates = [0.99, 0.995, 0.999]
+    initial_temperatures = [5000, 7000, 10000]
+    cooling_rates = [0.8, 0.995, 0.999]
     stopping_temperatures = [1, 10, 50]
 
     best_hyperparameters = None
@@ -105,8 +115,8 @@ def main():
         best_stopping_temperature
     )
 
-    # for solution, distance in solutions:
-        # print(f"Solution: {solution}, Distance: {distance}")
+    for solution, distance in solutions:
+        print(f"Solution: {solution}, Distance: {distance}")
 
     print("\nBest Solution: ", best_solution)
     print("Best Distance: ", best_distance)
