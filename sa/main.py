@@ -28,6 +28,7 @@ def simulated_annealing(distance_matrix, initial_temperature, cooling_rate, stop
     number_of_cities = len(distance_matrix)
 
     current_solution = list(range(number_of_cities))
+    print("here", current_solution)
     random.shuffle(current_solution)
     best_solution = current_solution.copy()
     best_distance = calculate_total_distance(best_solution, distance_matrix)
@@ -64,15 +65,31 @@ def simulated_annealing(distance_matrix, initial_temperature, cooling_rate, stop
 def main():
     file_path = 'tsp_data2.txt'
     distance_matrix = load_tsp_data(file_path)
-    initial_temperature = 10000
-    cooling_rate = 0.995
-    stopping_temperature = 1
+    initial_temperatures = [1000, 5000, 10000]
+    cooling_rates = [0.99, 0.995, 0.999]
+    stopping_temperatures = [1, 10, 50]
 
-    solutions, best_solution, best_distance = simulated_annealing(distance_matrix, initial_temperature, cooling_rate,
-                                                                  stopping_temperature)
+    best_hyperparameters = None
+    best_training_distance = float('inf')
 
-    for solution, distance in solutions:
-        print(f"Solution: {solution}, Distance: {distance}")
+    for initial_temperature in initial_temperatures:
+        for cooling_rate in cooling_rates:
+            for stopping_temperature in stopping_temperatures:
+                solutions, best_solution, best_distance = simulated_annealing(
+                    distance_matrix,
+                    initial_temperature,
+                    cooling_rate,
+                    stopping_temperature
+                )
+                if best_distance < best_training_distance:
+                    best_training_distance = best_distance
+                    best_hyperparameters = (initial_temperature, cooling_rate, stopping_temperature)
+
+    print("Best Hyperparameters: ", best_hyperparameters)
+    print("Best Training Distance: ", best_training_distance)
+
+    # for solution, distance in solutions:
+    #     print(f"Solution: {solution}, Distance: {distance}")
 
     print("\nBest Solution: ", best_solution)
     print("Best Distance: ", best_distance)
@@ -80,8 +97,13 @@ def main():
     file_path = 'tsp_data.txt'
     distance_matrix = load_tsp_data(file_path)
 
-    solutions, best_solution, best_distance = simulated_annealing(distance_matrix, initial_temperature, cooling_rate,
-                                                                  stopping_temperature)
+    best_initial_temperature, best_cooling_rate, best_stopping_temperature = best_hyperparameters
+    solutions, best_solution, best_distance = simulated_annealing(
+        distance_matrix,
+        best_initial_temperature,
+        best_cooling_rate,
+        best_stopping_temperature
+    )
 
     # for solution, distance in solutions:
         # print(f"Solution: {solution}, Distance: {distance}")
